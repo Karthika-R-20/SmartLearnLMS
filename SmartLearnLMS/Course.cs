@@ -14,14 +14,14 @@ public class Course
     // ==================== CONSTRUCTOR ====================
 
     public Course(int courseId, string courseName, string description,
-                  string instructorName, string category, int maxStudents, int currentEnrollment)
+                  string instructorName, string category, int currentEnrollment)
     {
         CourseId = courseId;
         CourseName = courseName;
         Description = description;
         InstructorName = instructorName;
         Category = category;
-        MaxStudents = maxStudents;
+        MaxStudents = 50;
         CurrentEnrollments = currentEnrollment;    // always starts at 0
     }
 
