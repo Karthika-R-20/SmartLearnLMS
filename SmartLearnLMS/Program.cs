@@ -20,22 +20,22 @@ namespace SmartLearn
 
         static void Main(string[] args)
         {
-            // Seed typed objects — Student, Instructor, Admin (not plain User)
-            users.Add(new Student("student1", "pass123", "student@smartlearn.com"));
-            users.Add(new Instructor("instructor1", "pass123", "instructor@smartlearn.com"));
-            users.Add(new Admin("admin", "admin123", "admin@smartlearn.com"));
+            // Load sample courses first — must exist before anything references them
+            InitializeCourses();
 
-            // Assign courses to the seeded instructor
+            // Seed typed objects — Student, Instructor, Admin (not plain User)
+            users.Add(new Student("student1",    "pass123",  "student@smartlearn.com"));
+            users.Add(new Instructor("instructor1", "pass123", "instructor@smartlearn.com"));
+            users.Add(new Admin("admin",          "admin123", "admin@smartlearn.com"));
+
+            // Assign courses to the seeded instructor after courses are loaded
             Instructor seededInstructor = users.Find(u => u is Instructor) as Instructor;
             if (seededInstructor != null)
             {
-                seededInstructor.AddCourse(1);
-                seededInstructor.AddCourse(2);
-                seededInstructor.AddCourse(3);
+                seededInstructor.AddCourse(101);
+                seededInstructor.AddCourse(102);
+                seededInstructor.AddCourse(103);
             }
-
-            // Load sample courses
-            LoadSampleCourses();
 
             // Main program loop
             while (true)
@@ -43,43 +43,123 @@ namespace SmartLearn
                 if (!isLoggedIn)
                     ShowMainMenu();
                 else
-                    ShowDashboard();
+                    ShowRoleMenu();
+            }
+        }
+
+        // ==================== ROLE MENU ====================
+        // Polymorphic — currentUser.DisplayDashboard() automatically calls the correct
+        // override (StudentDashboard / InstructorDashboard / AdminDashboard).
+        // No if-else or type-checking needed here at all.
+
+        static void ShowRoleMenu()
+        {
+            Console.Clear();
+            currentUser.DisplayDashboard();   // polymorphic call — no if-else
+            HandleMenuChoice();               // reads input and routes for whoever is logged in
+        }
+
+        // Routes the menu choice to the correct handler based on the logged-in user type.
+        // The cast is safe because we already know who is logged in from the Login() step.
+        static void HandleMenuChoice()
+        {
+            Console.Write("\nEnter your choice (1-5): ");
+
+            if (!int.TryParse(Console.ReadLine(), out int choice) || choice < 1 || choice > 5)
+            {
+                ShowError("Invalid input! Please enter 1-5.");
+                Pause("Press any key to try again..."); return;
+            }
+
+            if (currentUser is Student student)
+            {
+                if      (choice == 1) BrowseCourses();
+                else if (choice == 2) ShowMyEnrolledCourses(student);
+                else if (choice == 3) UpdateStudentProgress(student);
+                else if (choice == 4) ShowStudentStats(student);
+                else if (choice == 5) Logout();
+            }
+            else if (currentUser is Instructor instructor)
+            {
+                if      (choice == 1) ShowInstructorCourses(instructor);
+                else if (choice == 2) AddInstructorCourse(instructor);
+                else if (choice == 3) ShowInstructorStudents(instructor);
+                else if (choice == 4) ShowInstructorStudentCount(instructor);
+                else if (choice == 5) Logout();
+            }
+            else if (currentUser is Admin admin)
+            {
+                if      (choice == 1) admin.ViewAllUsers(users);
+                else if (choice == 2) DeactivateUserAsAdmin(admin);
+                else if (choice == 3) admin.GetSystemStats(users, courses, enrollments);
+                else if (choice == 4) UniversalSearch(users, courses);
+                else if (choice == 5) Logout();
             }
         }
 
         // ==================== LOAD SAMPLE COURSES ====================
 
-        static void LoadSampleCourses()
+        static void InitializeCourses()
         {
             courses.Clear();
 
-            courses.Add(new Course(1, "C# Programming Fundamentals",
-                "Learn the basics of C# including variables, loops, and OOP",
-                "Prof. Smith", "Programming", 25));
+            // ── Online Courses (IDs 101–105) ─────────────────────────────────
+            courses.Add(new OnlineCourse(101,
+                "C# Fundamentals",
+                "Master C# syntax, OOP principles, and the .NET ecosystem",
+                "Prof. Smith", "Programming", 450));
 
-            courses.Add(new Course(2, "Introduction to SQL Server",
-                "Database fundamentals including queries, joins, and stored procedures",
-                "Prof. Johnson", "Database", 20));
+            courses.Add(new OnlineCourse(102,
+                "Python for Beginners",
+                "Start coding with Python — variables, loops, functions, and files",
+                "Prof. Johnson", "Programming", 360));
 
-            courses.Add(new Course(3, "Web Development with ASP.NET Core",
-                "Build modern web applications using ASP.NET Core MVC",
-                "Prof. Williams", "Web Development", 30));
+            courses.Add(new OnlineCourse(103,
+                "Web Development Basics",
+                "Build websites with HTML, CSS, and JavaScript from scratch",
+                "Prof. Williams", "Web Development", 540));
 
-            courses.Add(new Course(4, "Machine Learning with Python",
-                "Introduction to ML algorithms, data preprocessing, and model training",
-                "Prof. Davis", "Data Science", 20));
+            courses.Add(new OnlineCourse(104,
+                "Data Structures",
+                "Arrays, linked lists, stacks, queues, trees, and graphs in depth",
+                "Prof. Davis", "Computer Science", 600));
 
-            courses.Add(new Course(5, "Cloud Computing with Azure",
-                "Deploy and manage applications on Microsoft Azure cloud platform",
-                "Prof. Martinez", "Cloud", 15));
+            courses.Add(new OnlineCourse(105,
+                "Machine Learning Intro",
+                "Supervised and unsupervised learning, model evaluation, and scikit-learn",
+                "Prof. Martinez", "Data Science", 720));
 
-            courses.Add(new Course(6, "Cybersecurity Essentials",
-                "Learn ethical hacking, network security, and threat prevention",
-                "Prof. Brown", "Security", 18));
+            // ── In-Person Courses (IDs 201–203) ──────────────────────────────
+            courses.Add(new InPersonCourse(201,
+                "Database Design Workshop",
+                "Relational modelling, normalisation, SQL, and stored procedures",
+                "Prof. Brown", "Database",
+                25, "B-101", "Engineering Building"));
 
-            courses.Add(new Course(7, "Mobile App Development with Flutter",
-                "Build cross-platform mobile apps for iOS and Android using Flutter",
-                "Prof. Taylor", "Mobile", 22));
+            courses.Add(new InPersonCourse(202,
+                "Network Security Lab",
+                "Hands-on ethical hacking, penetration testing, and defence strategies",
+                "Prof. Taylor", "Security",
+                20, "C-205", "CS Building"));
+
+            courses.Add(new InPersonCourse(203,
+                "Mobile App Development",
+                "Build iOS and Android apps using Flutter and Dart in a lab setting",
+                "Prof. Anderson", "Mobile",
+                30, "A-301", "Tech Center"));
+
+            // ── Hybrid Courses (IDs 301–302) ─────────────────────────────────
+            courses.Add(new HybridCourse(301,
+                "Full-Stack Development",
+                "React front-end meets ASP.NET Core back-end — build real projects",
+                "Prof. Thompson", "Web Development",
+                30, 720, "C-201", "CS Building"));
+
+            courses.Add(new HybridCourse(302,
+                "Cloud Computing",
+                "Azure and AWS fundamentals with hands-on lab deployments",
+                "Prof. Garcia", "Cloud",
+                25, 600, "D-101", "Engineering Building"));
         }
 
         // ==================== MAIN MENU ====================
@@ -111,18 +191,8 @@ namespace SmartLearn
             else if (choice == 4) ExitApp();
         }
 
-        // Routes to dashboard using "is" keyword type checking
-        static void ShowDashboard()
-        {
-            // Use "is" keyword to check the actual type of currentUser
-            if (currentUser is Student student)
-                ShowStudentDashboard(student);
-            else if (currentUser is Instructor instructor)
-                ShowInstructorDashboard(instructor);
-            else if (currentUser is Admin admin)
-                ShowAdminDashboard(admin);
-        }
-
+    
+        
         // ==================== REGISTER USER ====================
 
         // Creates correct typed object — Student, Instructor, or Admin
@@ -147,13 +217,11 @@ namespace SmartLearn
                 Pause("Press any key to go back..."); return;
             }
 
-            // Step 3: Get and validate password
+            // Step 3: Get password — User.cs setter validates length and digit requirement
             Console.Write("  Enter Password: ");
             string password = Console.ReadLine();
 
-            if (!ValidatePassword(password)) { Pause("Press any key to go back..."); return; }
-
-            // Step 4: Confirm password
+            // Step 4: Confirm password match before creating object
             Console.Write("  Confirm Password: ");
             string confirmPassword = Console.ReadLine();
 
@@ -163,18 +231,24 @@ namespace SmartLearn
                 Pause("Press any key to go back..."); return;
             }
 
-            // Step 5: Get and validate email
+            // Step 5: Get email — User.cs setter validates @ symbol
             Console.Write("  Enter Email: ");
             string email = Console.ReadLine()?.Trim();
 
-            if (!ValidateEmail(email)) { Pause("Press any key to go back..."); return; }
+            // Step 5a: Check email uniqueness here — User.cs has no access to the users list
+            User emailMatch = users.Find(u => u.Email != null && u.Email.ToLower() == email.ToLower());
+            if (emailMatch != null)
+            {
+                ShowError("Email '" + email + "' is already registered.");
+                Pause("Press any key to go back..."); return;
+            }
 
             // Step 6: Get role choice
             Console.WriteLine("  Select Role:  1. Student   2. Instructor   3. Admin");
             Console.Write("  Enter Role (1-3): ");
             string roleInput = Console.ReadLine()?.Trim();
 
-            // Step 7: Create the CORRECT typed object based on role choice
+            // Step 7: Create the correct typed object — constructors call User setters internally
             User newUser = null;
 
             if (roleInput == "1")
@@ -189,10 +263,16 @@ namespace SmartLearn
                 Pause("Press any key to go back..."); return;
             }
 
-            // Step 8: Add typed object to users list
+            // Step 8: If setter rejected password or email, backing field will be null — abort
+            if (newUser.Password == null || newUser.Email == null)
+            {
+                ShowError("Registration failed. Please fix the errors above and try again.");
+                Pause("Press any key to go back..."); return;
+            }
+
+            // Step 9: Add to users list and confirm
             users.Add(newUser);
 
-            // Step 9: Show success
             Console.WriteLine("\n  ✔ Registration Successful!");
             Console.WriteLine("  ------------------------------");
             newUser.DisplayInfo();
@@ -202,6 +282,8 @@ namespace SmartLearn
         }
 
         // ==================== VALIDATION METHODS ====================
+        // Note: Password and Email rules live in User.cs setters — no duplication here
+        // Username is validated here because uniqueness requires access to the users list
 
         static bool ValidateUsername(string username)
         {
@@ -216,38 +298,6 @@ namespace SmartLearn
 
             if (username.Contains(" "))
             { ShowError("Username cannot contain spaces."); return false; }
-
-            return true;
-        }
-
-        static bool ValidatePassword(string password)
-        {
-            if (string.IsNullOrWhiteSpace(password))
-            { ShowError("Password cannot be empty."); return false; }
-
-            if (password.Length < 6)
-            { ShowError("Password must be at least 6 characters long."); return false; }
-
-            if (password.Length > 30)
-            { ShowError("Password cannot exceed 30 characters."); return false; }
-
-            return true;
-        }
-
-        static bool ValidateEmail(string email)
-        {
-            if (string.IsNullOrWhiteSpace(email))
-            { ShowError("Email cannot be empty."); return false; }
-
-            if (!email.Contains("@"))
-            { ShowError("Invalid email. Must contain '@'."); return false; }
-
-            if (!email.Contains("."))
-            { ShowError("Invalid email. Must contain a '.'"); return false; }
-
-            User emailMatch = users.Find(u => u.Email.ToLower() == email.ToLower());
-            if (emailMatch != null)
-            { ShowError("Email '" + email + "' is already registered."); return false; }
 
             return true;
         }
@@ -287,14 +337,9 @@ namespace SmartLearn
             isLoggedIn = true;
             currentUser = foundUser;
 
-            // Step 4: Use "is" keyword to show typed welcome message
-            string userType = "";
-            if (currentUser is Student) userType = "Student";
-            else if (currentUser is Instructor) userType = "Instructor";
-            else if (currentUser is Admin) userType = "Admin";
-
+            // Step 4: Show welcome message — Role is already set by the typed constructor
             Console.WriteLine("\n  ✔ Login successful! Welcome back, " + currentUser.Username + ".");
-            Console.WriteLine("  Account Type : " + userType);
+            Console.WriteLine("  Account Type : " + currentUser.Role);
             Pause("Press any key to continue...");
         }
 
@@ -317,27 +362,39 @@ namespace SmartLearn
             do
             {
                 Console.Clear();
-                Console.WriteLine("==============================");
-                Console.WriteLine("        Browse Courses       ");
-                Console.WriteLine("==============================");
-                Console.WriteLine("1. View All Courses");
-                Console.WriteLine("2. Search Courses");
-                Console.WriteLine("3. Back");
-                Console.WriteLine("==============================");
-                Console.Write("Enter your choice (1-3): ");
+                Console.WriteLine("╔════════════════════════════════╗");
+                Console.WriteLine("║        Browse Courses          ║");
+                Console.WriteLine("╚════════════════════════════════╝");
+                Console.WriteLine("[1] View All Courses");
+                Console.WriteLine("[2] Search Courses");
+                Console.WriteLine("[3] Enroll in a Course");
+                Console.WriteLine("[4] Back");
+                Console.WriteLine("================================");
+                Console.Write("Enter your choice (1-4): ");
 
                 string input = Console.ReadLine();
 
-                if (!int.TryParse(input, out choice) || choice < 1 || choice > 3)
+                if (!int.TryParse(input, out choice) || choice < 1 || choice > 4)
                 {
-                    ShowError("Invalid input! Please enter 1, 2, or 3.");
+                    ShowError("Invalid input! Please enter 1, 2, 3, or 4.");
                     Pause("Press any key to try again..."); continue;
                 }
 
-                if (choice == 1) DisplayAllCourses();
+                if      (choice == 1) DisplayAllCourses();
                 else if (choice == 2) SearchCourses();
+                else if (choice == 3)
+                {
+                    // Only students can enroll
+                    if (isLoggedIn && currentUser is Student student)
+                        EnrollStudentInCourse(student);
+                    else
+                    {
+                        ShowError("You must be logged in as a Student to enroll.");
+                        Pause("Press any key to go back...");
+                    }
+                }
 
-            } while (choice != 3);
+            } while (choice != 4);
         }
 
         static void SearchCourses()
@@ -346,10 +403,10 @@ namespace SmartLearn
             do
             {
                 Console.Clear();
-                Console.WriteLine("==============================");
-                Console.WriteLine("        Search Courses       ");
-                Console.WriteLine("==============================");
-                Console.Write("Enter keyword to search: ");
+                Console.WriteLine("╔════════════════════════════════╗");
+                Console.WriteLine("║        Search Courses          ║");
+                Console.WriteLine("╚════════════════════════════════╝");
+                Console.Write("  Enter keyword to search: ");
 
                 string keyword = Console.ReadLine();
 
@@ -359,27 +416,14 @@ namespace SmartLearn
                 }
                 else
                 {
-                    Console.WriteLine("\n------------------------------");
-                    Console.WriteLine("  Results for: \"" + keyword + "\"");
-                    Console.WriteLine("------------------------------");
+                    // Use SearchEngine with ISearchable — Course already implements it
+                    List<ISearchable> searchable = new List<ISearchable>();
+                    foreach (Course c in courses) searchable.Add(c);
 
-                    int matchCount = 0;
-                    foreach (Course course in courses)
-                    {
-                        if (course.CourseName.ToLower().Contains(keyword.ToLower()) ||
-                            course.Category.ToLower().Contains(keyword.ToLower()))
-                        {
-                            matchCount++;
-                            Console.WriteLine("  " + matchCount + ". " + course.CourseName + " [" + course.Category + "]");
-                        }
-                    }
+                    List<ISearchable> results = SearchEngine.Search(searchable, keyword);
 
-                    if (matchCount == 0)
-                        Console.WriteLine("  No results found. Try a different keyword.");
-                    else
-                        Console.WriteLine("\n  " + matchCount + " course(s) found.");
-
-                    Console.WriteLine("------------------------------");
+                    Console.WriteLine("\n  Results for: \"" + keyword + "\"");
+                    SearchEngine.DisplayResults(results);
                 }
 
                 Console.Write("\nSearch again? (y/n): ");
@@ -389,107 +433,71 @@ namespace SmartLearn
             } while (searchAgain == 'y');
         }
 
-        // ==================== STUDENT DASHBOARD ====================
-
-        // Takes typed Student parameter — accesses Student-specific methods directly
-        static void ShowStudentDashboard(Student student)
-        {
-            Console.Clear();
-            Console.WriteLine("==============================");
-            Console.WriteLine("     Student Dashboard       ");
-            Console.WriteLine("  Hello, " + student.Username + "!");
-            Console.WriteLine("  Enrolled in: " + student.EnrolledCourseIds.Count + " course(s)");
-            Console.WriteLine("==============================");
-            Console.WriteLine("1. Browse & Enroll Courses");
-            Console.WriteLine("2. My Enrolled Courses");
-            Console.WriteLine("3. Update Progress");
-            Console.WriteLine("4. Drop a Course");
-            Console.WriteLine("5. My Statistics");
-            Console.WriteLine("6. Logout");
-            Console.WriteLine("==============================");
-            Console.Write("Enter your choice (1-6): ");
-
-            if (!int.TryParse(Console.ReadLine(), out int choice) || choice < 1 || choice > 6)
-            {
-                ShowError("Invalid input! Please enter 1 to 6.");
-                Pause("Press any key to try again..."); return;
-            }
-
-            if (choice == 1) EnrollStudentInCourse(student);
-            else if (choice == 2) ShowMyEnrolledCourses(student);
-            else if (choice == 3) UpdateStudentProgress(student);
-            else if (choice == 4) DropStudentCourse(student);
-            else if (choice == 5) ShowStudentStats(student);
-            else if (choice == 6) Logout();
-        }
+        
 
         // ==================== ENROLL STUDENT IN COURSE ====================
 
-        // Coordinates between Student, Course, and Enrollment objects
-        // Handles the entire enrollment workflow
+        // Fully polymorphic — calls course.DisplayCourseInfo(), course.CanEnroll(), course.Enroll()
+        // No type-checking or if/else based on course type anywhere in this method
         static void EnrollStudentInCourse(Student student)
         {
-            Console.WriteLine("\n=== AVAILABLE COURSES ===");
+            Console.Clear();
+            Console.WriteLine("╔════════════════════════════════╗");
+            Console.WriteLine("║       Available Courses        ║");
+            Console.WriteLine("╚════════════════════════════════╝");
 
-            // Display all courses with full details
+            // Polymorphic display — each course type renders its own format
             foreach (Course course in courses)
             {
-                // Mark already enrolled courses so student can see at a glance
-                string enrolledTag = student.EnrolledCourseIds.Contains(course.CourseId)
-                    ? " [ENROLLED]" : "";
+                course.DisplayCourseInfo();
 
-                Console.WriteLine($"\n[{course.CourseId}] {course.CourseName}{enrolledTag}");
-                Console.WriteLine($"  Category    : {course.Category}");
-                Console.WriteLine($"  Instructor  : {course.InstructorName}");
-                Console.WriteLine($"  Enrollment  : {course.CurrentEnrollments}/{course.MaxStudents}");
-                Console.WriteLine($"  Available   : {(course.CanEnroll() ? "Yes" : "Full")}");
-                Console.WriteLine("  ---");
+                // Mark already-enrolled courses for the student's awareness
+                if (student.EnrolledCourseIds.Contains(course.CourseId))
+                    Console.WriteLine("  ✔ You are already enrolled in this course.");
+
+                // Polymorphic enrollment status — no type-checking needed
+                if (!course.CanEnroll(student))
+                    Console.WriteLine("  ✗ Full — enrollment closed.");
+
+                Console.WriteLine();
             }
 
-            Console.Write("\nEnter Course ID to enroll: ");
+            Console.Write("Enter Course ID to enroll (0 to cancel): ");
 
-            // Validate input is a number
-            if (!int.TryParse(Console.ReadLine(), out int courseId))
+            if (!int.TryParse(Console.ReadLine(), out int courseId) || courseId == 0)
             {
-                Console.WriteLine("  Invalid course ID.");
                 Pause("Press any key to go back..."); return;
             }
 
-            // Find the Course object from the courses list using CourseId
             Course selectedCourse = courses.Find(c => c.CourseId == courseId);
 
             if (selectedCourse == null)
             {
-                Console.WriteLine("  Course not found.");
+                ShowError("Course ID " + courseId + " not found.");
                 Pause("Press any key to go back..."); return;
             }
 
-            // Validate: course must not be full
-            if (!selectedCourse.CanEnroll())
+            // Polymorphic CanEnroll — each course type enforces its own rules
+            // Note: already-enrolled check handled inside student.EnrollInCourse()
+            if (!selectedCourse.CanEnroll(student))
             {
-                Console.WriteLine("  Course is full!");
+                ShowError("This course is full and cannot accept new enrollments.");
                 Pause("Press any key to go back..."); return;
             }
 
-            // Validate: student must not already be enrolled
-            if (student.EnrolledCourseIds.Contains(courseId))
-            {
-                Console.WriteLine("  Already enrolled in this course!");
-                Pause("Press any key to go back..."); return;
-            }
+            // Polymorphic Enroll — handles count increment, student.EnrollInCourse(), notification
+            selectedCourse.Enroll(student);
 
-            // Enroll: call Student's EnrollInCourse() — adds to EnrolledCourseIds and sets progress to 0
-            student.EnrollInCourse(courseId);
-
-            // Update Course enrollment count
-            selectedCourse.IncrementEnrollment();
-
-            // Create Enrollment record and add to global enrollments list
+            // Create Enrollment record to track progress and date
             int enrollmentId = enrollments.Count + 1;
-            Enrollment newEnrollment = new Enrollment(enrollmentId, student.Username, courseId);
-            enrollments.Add(newEnrollment);
+            enrollments.Add(new Enrollment(enrollmentId, student.Username, courseId));
 
-            Console.WriteLine($"\n  Successfully enrolled in '{selectedCourse.CourseName}'!");
+            // Notify instructor if one is assigned to this course
+            Instructor courseInstructor = users.Find(u =>
+                u is Instructor i && i.CourseIds.Contains(courseId)) as Instructor;
+            if (courseInstructor != null)
+                courseInstructor.NotifyEnrollment(student.Username, courseId);
+
             Pause("Press any key to continue...");
         }
 
@@ -517,51 +525,11 @@ namespace SmartLearn
             Pause("Press any key to go back...");
         }
 
-        // Shows progress summary using Student's GetAverageProgress() and GetCompletedCourses()
-        static void ShowMyProgress(Student student)
-        {
-            Console.Clear();
-            Console.WriteLine("==============================");
-            Console.WriteLine("        My Progress          ");
-            Console.WriteLine("  Student: " + student.Username);
-            Console.WriteLine("==============================");
-
-            if (student.EnrolledCourseIds.Count == 0)
-            {
-                Console.WriteLine("  No courses enrolled yet.");
-                Pause("Press any key to go back..."); return;
-            }
-
-            // Use Student's own methods
-            double average = student.GetAverageProgress();
-            List<int> completed = student.GetCompletedCourses();
-
-            Console.WriteLine("  Enrolled Courses : " + student.EnrolledCourseIds.Count);
-            Console.WriteLine("  Completed Courses: " + completed.Count);
-            Console.WriteLine("  Average Progress : " + average.ToString("0.0") + "%");
-            Console.WriteLine("------------------------------");
-
-            // Show each course with a progress bar
-            foreach (int courseId in student.EnrolledCourseIds)
-            {
-                Course course = courses.Find(c => c.CourseId == courseId);
-                int progress = student.CourseProgress[courseId];
-                string bar = BuildProgressBar(progress);
-
-                Console.WriteLine("  " + (course != null ? course.CourseName : "Course " + courseId));
-                Console.WriteLine("  " + bar + " " + progress + "%");
-                Console.WriteLine();
-            }
-
-            Console.WriteLine("==============================");
-            Pause("Press any key to go back...");
-        }
-
         // Builds a simple text progress bar e.g. [████████░░] 80%
         static string BuildProgressBar(int percentage)
         {
             int filled = percentage / 10;
-            int empty = 10 - filled;
+            int empty  = 10 - filled;
             return "[" + new string('█', filled) + new string('░', empty) + "]";
         }
 
@@ -594,15 +562,15 @@ namespace SmartLearn
                 Pause("Press any key to go back..."); return;
             }
 
-            // Step 3: Get progress percentage from user and validate range
+            // Step 3: Get progress percentage — Student.ProgressPercentage setter validates 0-100
             Console.Write("Enter progress percentage (0-100): ");
-            if (!int.TryParse(Console.ReadLine(), out int progress) || progress < 0 || progress > 100)
+            if (!int.TryParse(Console.ReadLine(), out int progress))
             {
-                Console.WriteLine("  Invalid progress value. Must be between 0 and 100.");
+                Console.WriteLine("  Invalid input. Please enter a number.");
                 Pause("Press any key to go back..."); return;
             }
 
-            // Step 4: Update progress in Student object (CourseProgress dictionary)
+            // Step 4: Update progress — setter rejects out-of-range values with error message
             student.UpdateProgress(courseId, progress);
 
             // Step 5: Find the matching Enrollment record and update it too
@@ -669,7 +637,7 @@ namespace SmartLearn
             // Step 4: Find the Course object and decrement its enrollment count
             if (course != null)
             {
-                course.DecrementEnrollment();
+                if (course.CurrentEnrollments > 0) course.CurrentEnrollments--;
             }
 
             // Step 5: Find matching Enrollment record and remove it from the global list
@@ -678,11 +646,9 @@ namespace SmartLearn
                 e.CourseId == courseId);
 
             if (enrollment != null)
-            {
                 enrollments.Remove(enrollment);
-                Console.WriteLine("\n  Successfully dropped '" + courseName + "'.");
-                Console.WriteLine("  Enrollment record removed.");
-            }
+
+            Console.WriteLine("\n  ✔ Drop complete for '" + courseName + "'.");
 
             Pause("Press any key to continue...");
         }
@@ -729,37 +695,7 @@ namespace SmartLearn
             Pause("Press any key to go back...");
         }
 
-        // ==================== INSTRUCTOR DASHBOARD ====================
-
-        // Takes typed Instructor parameter — accesses Instructor-specific methods
-        static void ShowInstructorDashboard(Instructor instructor)
-        {
-            Console.Clear();
-            Console.WriteLine("==============================");
-            Console.WriteLine("    Instructor Dashboard     ");
-            Console.WriteLine("  Hello, " + instructor.Username + "!");
-            Console.WriteLine("  Teaching: " + instructor.CourseIds.Count + " course(s)");
-            Console.WriteLine("==============================");
-            Console.WriteLine("1. My Courses");
-            Console.WriteLine("2. View My Students");
-            Console.WriteLine("3. Add a Course to Teach");
-            Console.WriteLine("4. My Student Count");
-            Console.WriteLine("5. Logout");
-            Console.WriteLine("==============================");
-            Console.Write("Enter your choice (1-5): ");
-
-            if (!int.TryParse(Console.ReadLine(), out int choice) || choice < 1 || choice > 5)
-            {
-                ShowError("Invalid input! Please enter 1 to 5.");
-                Pause("Press any key to try again..."); return;
-            }
-
-            if (choice == 1) ShowInstructorCourses(instructor);
-            else if (choice == 2) ShowInstructorStudents(instructor);
-            else if (choice == 3) AddInstructorCourse(instructor);
-            else if (choice == 4) ShowInstructorStudentCount(instructor);
-            else if (choice == 5) Logout();
-        }
+       
 
         // Shows the instructor's assigned courses with full Course object details
         static void ShowInstructorCourses(Instructor instructor)
@@ -824,7 +760,10 @@ namespace SmartLearn
             Console.WriteLine("==============================");
 
             // Step 1: Show all available courses so instructor can see IDs
-            DisplayAllCourses();
+            Console.WriteLine("\n  Available Courses:");
+            foreach (Course c in courses)
+                Console.WriteLine($"    [{c.CourseId}] {c.CourseName} ({c.GetCourseType()})");
+            Console.WriteLine();
 
             // Step 2: Get course ID from user
             Console.Write("\nEnter Course ID to add: ");
@@ -863,55 +802,26 @@ namespace SmartLearn
             Pause("Press any key to go back...");
         }
 
-        // Displays all courses in the system — used by AddInstructorCourse and enrollment
-        // Fixed: uses CourseName not Title
+        // Polymorphic display — each course type calls its own DisplayCourseInfo()
         static void DisplayAllCourses()
         {
-            Console.WriteLine("\n=== ALL COURSES ===");
+            Console.Clear();
+            Console.WriteLine("╔════════════════════════════════╗");
+            Console.WriteLine("║          All Courses           ║");
+            Console.WriteLine("╚════════════════════════════════╝");
+            Console.WriteLine("  Total: " + courses.Count + " course(s)");
+            Console.WriteLine();
 
             foreach (Course course in courses)
             {
-                Console.WriteLine($"\n[{course.CourseId}] {course.CourseName}");
-                Console.WriteLine($"  Category    : {course.Category}");
-                Console.WriteLine($"  Instructor  : {course.InstructorName}");
-                Console.WriteLine($"  Enrollment  : {course.CurrentEnrollments}/{course.MaxStudents}");
-                Console.WriteLine("  ---");
+                course.DisplayCourseInfo();   // polymorphic — Online/InPerson/Hybrid each render differently
+                Console.WriteLine();
             }
+
             Pause("Press any key to go back...");
         }
 
-        // ==================== ADMIN DASHBOARD ====================
-
-        // Takes typed Admin parameter — accesses Admin-specific methods
-        static void ShowAdminDashboard(Admin admin)
-        {
-            Console.Clear();
-            Console.WriteLine("==============================");
-            Console.WriteLine("       Admin Dashboard       ");
-            Console.WriteLine("  Hello, " + admin.Username + "!");
-            Console.WriteLine("==============================");
-            Console.WriteLine("1. View All Users");
-            Console.WriteLine("2. System Statistics");
-            Console.WriteLine("3. Deactivate a User");
-            Console.WriteLine("4. Manage Courses");
-            Console.WriteLine("5. Logout");
-            Console.WriteLine("==============================");
-            Console.Write("Enter your choice (1-5): ");
-
-            if (!int.TryParse(Console.ReadLine(), out int choice) || choice < 1 || choice > 5)
-            {
-                ShowError("Invalid input! Please enter 1 to 5.");
-                Pause("Press any key to try again..."); return;
-            }
-
-            if (choice == 1) admin.ViewAllUsers(users);
-            else if (choice == 2) admin.GetSystemStats(users, courses, enrollments);
-            else if (choice == 3) DeactivateUserAsAdmin(admin);
-            else if (choice == 5) Logout();
-            else ShowComingSoon();
-
-            if (choice != 5) Pause("Press any key to continue...");
-        }
+        
 
         // ==================== ADMIN HELPER METHOD ====================
 
@@ -940,18 +850,52 @@ namespace SmartLearn
                 Pause("Press any key to go back..."); return;
             }
 
-            // Step 4: Validate — admin cannot deactivate their own account
-            if (userToDeactivate == currentUser)
-            {
-                Console.WriteLine("  You cannot deactivate yourself!");
-                Pause("Press any key to go back..."); return;
-            }
-
-            // Step 5: Call Admin's DeactivateUser() with the found User object
+            // Step 4: Call Admin's DeactivateUser() — it handles self-deactivation guard internally
             admin.DeactivateUser(userToDeactivate);
             Pause("Press any key to continue...");
         }
 
+        // ==================== UNIVERSAL SEARCH ====================
+ 
+        // Searches across both courses and students in one combined operation
+        static void UniversalSearch(List<User> users, List<Course> courses)
+        {
+            Console.Clear();
+            Console.WriteLine("╔════════════════════════════════╗");
+            Console.WriteLine("║       Universal Search         ║");
+            Console.WriteLine("╚════════════════════════════════╝");
+ 
+            // Step 1: Build combined ISearchable list — all courses first
+            List<ISearchable> searchItems = new List<ISearchable>();
+ 
+            foreach (Course course in courses)
+                searchItems.Add(course);
+ 
+            // Step 2: Add users that implement ISearchable (Students only)
+            foreach (User user in users)
+            {
+                if (user is ISearchable searchableUser)
+                    searchItems.Add(searchableUser);
+            }
+ 
+            // Step 3: Ask for keyword
+            Console.Write("  Enter search keyword: ");
+            string keyword = Console.ReadLine()?.Trim();
+ 
+            if (string.IsNullOrWhiteSpace(keyword))
+            {
+                ShowError("Keyword cannot be empty.");
+                Pause("Press any key to go back..."); return;
+            }
+ 
+            // Step 4 & 5: Search and display via SearchEngine
+            Console.WriteLine("\n  Results for: \"" + keyword + "\"");
+            List<ISearchable> results = SearchEngine.Search(searchItems, keyword);
+            SearchEngine.DisplayResults(results);
+ 
+            Pause("Press any key to go back...");
+        }
+        
         // ==================== HELPERS ====================
 
         static void ShowComingSoon()
