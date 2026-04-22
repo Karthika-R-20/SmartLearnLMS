@@ -81,8 +81,7 @@ public class Instructor : User, INotifiable
         Console.WriteLine("  ✔ Course ID " + courseId + " removed from " + Username + "'s courses.");
     }
 
-    // FIX 7: removed redundant no-param overload — all callers use this version
-    // Shows course title, students enrolled, and average progress per course
+
     public void ShowMyCourses(List<Course> courses, List<Enrollment> enrollments)
     {
         Console.WriteLine("==============================");
@@ -149,8 +148,6 @@ public class Instructor : User, INotifiable
         return uniqueStudents.Count;
     }
 
-    // FIX 8: removed internal Console.WriteLine — pure lookup, caller handles messaging
-    // Returns null if course not found or not assigned to this instructor
     public Course GetCourseById(int id, List<Course> courses)
     {
         if (!CourseIds.Contains(id))
@@ -165,19 +162,22 @@ public class Instructor : User, INotifiable
     }
     public override void DisplayDashboard()
     {
+        int notifCount = GetNotificationHistory().Count;
+
         Console.WriteLine("╔════════════════════════════════╗");
-        Console.WriteLine("║      INSTRUCTOR DASHBOARD         ║");
+        Console.WriteLine("║    INSTRUCTOR DASHBOARD        ║");
         Console.WriteLine("╚════════════════════════════════╝");
-
-        Console.WriteLine($"Welcome, Professor {Username}!");
-        Console.WriteLine($"Department : {Department}");
-        Console.WriteLine($"Teaching {CourseIds.Count} Courses");
-
-        Console.WriteLine();
+        Console.WriteLine($"  Welcome, Professor {Username}!");
+        Console.WriteLine($"  Department    : {Department}");
+        Console.WriteLine($"  Teaching      : {CourseIds.Count} course(s)");
+        Console.WriteLine($"  Notifications : {notifCount} message(s)");
+        Console.WriteLine("================================");
         Console.WriteLine("[1] My Courses");
         Console.WriteLine("[2] Create New Course");
-        Console.WriteLine("[3] View Student Roster");
-        Console.WriteLine("[4] CourseIds.Count");
-        Console.WriteLine("[5] Logout");
+        Console.WriteLine("[3] Add Course to Teach");
+        Console.WriteLine("[4] View Student Roster");
+        Console.WriteLine("[5] Grade Assignments");
+        Console.WriteLine("[6] My Notifications");
+        Console.WriteLine("[7] Logout");
     }
 }

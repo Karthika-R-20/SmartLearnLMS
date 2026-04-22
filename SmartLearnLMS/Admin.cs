@@ -207,7 +207,7 @@ public class Admin : User
         Console.WriteLine("[1] Manage Users");
         Console.WriteLine("[2] Manage Courses");
         Console.WriteLine("[3] View System Reports");
-        Console.WriteLine("[4] System Settings");
+        Console.WriteLine("[4] Analytics & Reports");
         Console.WriteLine("[5] Logout");
     }
 }

@@ -228,22 +228,23 @@ public class Student : User, ISearchable, INotifiable
 
     // ==================== DASHBOARD ====================
 
-    // Displays a professional dashboard using box-drawing characters
-    // Returns the menu choice so the caller (Program.cs) can act on it
     public override void DisplayDashboard()
     {
+        int notifCount = GetNotificationHistory().Count;
+
         Console.WriteLine("╔════════════════════════════════╗");
         Console.WriteLine("║      STUDENT DASHBOARD         ║");
         Console.WriteLine("╚════════════════════════════════╝");
-
-        Console.WriteLine($"Welcome, {Username}!");
-        Console.WriteLine($"Enrolled Courses: {EnrolledCourseIds.Count}");
-
-        Console.WriteLine();
+        Console.WriteLine($"  Welcome, {Username}!");
+        Console.WriteLine($"  Enrolled Courses : {EnrolledCourseIds.Count}");
+        Console.WriteLine($"  Avg Progress     : {GetAverageProgress():0.0}%");
+        Console.WriteLine("================================");
         Console.WriteLine("[1] Browse Available Courses");
         Console.WriteLine("[2] My Enrolled Courses");
         Console.WriteLine("[3] Update Progress");
         Console.WriteLine("[4] My Statistics");
-        Console.WriteLine("[5] Logout");
+        Console.WriteLine("[5] Rate a Course");
+        Console.WriteLine("[6] My Notifications");
+        Console.WriteLine("[7] Logout");
     }
 }
